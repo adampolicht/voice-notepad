@@ -25,7 +25,7 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
   <key>CFBundleName</key><string>Voice Notepad</string>
   <key>CFBundleDisplayName</key><string>Voice Notepad</string>
   <key>CFBundleIdentifier</key><string>com.voicenotepad.app</string>
-  <key>CFBundleExecutable</key><string>voice-notepad</string>
+  <key>CFBundleExecutable</key><string>Voice Notepad</string>
   <key>CFBundleIconFile</key><string>icon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleVersion</key><string>1.0</string>
@@ -35,12 +35,13 @@ cat > "$APP/Contents/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-# --- launcher executable (repo path baked in) ---
-cat > "$APP/Contents/MacOS/voice-notepad" <<EOF
+# --- launcher executable (repo path baked in; name shown in the Dock) ---
+EXEC="$APP/Contents/MacOS/Voice Notepad"
+cat > "$EXEC" <<EOF
 #!/bin/bash
 REPO="$REPO"
 EOF
-cat >> "$APP/Contents/MacOS/voice-notepad" <<'EOF'
+cat >> "$EXEC" <<'EOF'
 URL="http://127.0.0.1:8000"
 open_browser() { open -a "Opera GX" "$URL" 2>/dev/null || open "$URL"; }
 
@@ -63,7 +64,7 @@ fi
 # Run in the foreground so this app process IS the server: quitting the app stops it.
 exec "$REPO/.venv/bin/uvicorn" app.main:app --host 127.0.0.1 --port 8000
 EOF
-chmod +x "$APP/Contents/MacOS/voice-notepad"
+chmod +x "$EXEC"
 
 # --- icon: cream background + orange record circle (matches the UI) ---
 TMP="$(mktemp -d)"
