@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+
+# Virtual env
+.venv/
+venv/
+
+# Environment
+.env
+
+# Models / caches (never commit downloaded weights)
+models/
+*.bin
+.cache/
+
+# Recorded audio (test fixtures are the only allowed audio, tracked explicitly)
+*.webm
+*.ogg
+*.mp3
+*.m4a
+tests/fixtures/*.wav
+!tests/fixtures/hello_en.wav
+!tests/fixtures/czesc_pl.wav
+
+# OS
+.DS_Store
