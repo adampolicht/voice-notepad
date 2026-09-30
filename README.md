@@ -24,8 +24,9 @@ server (if it isn't already running) and opens the app in your browser. Keep tha
 while you use it; close it or press Ctrl+C to stop.
 
 **Dock app (macOS, no Terminal):** run `./build-app.command` once to build `Voice Notepad.app` into
-`/Applications`. Launch it from the Dock/Spotlight like any app: it runs the server in the background and
-opens the browser, with no visible Terminal. To stop it, right-click its Dock icon and choose **Quit**.
+`/Applications` (needs the Xcode Command Line Tools — `xcode-select --install` — for `swiftc`). Launch it
+from the Dock/Spotlight like any app: it runs the server in the background and opens the browser, with no
+visible Terminal. To stop it, right-click its Dock icon and choose **Quit** (this also stops the server).
 Re-run `build-app.command` if you move the project folder.
 
 ## The model: downloaded once, then offline
