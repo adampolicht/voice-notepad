@@ -19,6 +19,10 @@ uv run uvicorn app.main:app  # http://127.0.0.1:8000
 
 Open the page, allow the mic, press record (or the spacebar), speak, press again to stop.
 
+**One-click launch (macOS):** after the first `uv sync`, just double-click `run.command`. It starts the
+server (if it isn't already running) and opens the app in your browser. Keep that Terminal window open
+while you use it; close it or press Ctrl+C to stop.
+
 ## The model: downloaded once, then offline
 
 On **first run** the app downloads the chosen Whisper model from Hugging Face into
