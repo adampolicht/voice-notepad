@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import os
 import tempfile
 from contextlib import asynccontextmanager
@@ -18,15 +19,26 @@ from app.transcriber import Transcriber
 STATIC_DIR = Path(__file__).parent / "static"
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024  # 50 MB
 
+logger = logging.getLogger("voice_notepad")
+
 transcriber = Transcriber(
     settings.whisper_model, settings.whisper_device, settings.whisper_compute_type
 )
 
 
+def _load_model() -> None:
+    """Load the model, logging any failure so /api/health doesn't just hang on 'loading'."""
+    try:
+        transcriber.load()
+        logger.info("Model loaded: %s on %s", transcriber.model_name, transcriber.device)
+    except Exception:
+        logger.exception("Failed to load model %r", transcriber.model_name)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Load the model in a background thread so startup and /api/health stay responsive."""
-    asyncio.get_event_loop().run_in_executor(None, transcriber.load)
+    asyncio.get_running_loop().run_in_executor(None, _load_model)
     yield
 
 

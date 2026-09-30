@@ -445,9 +445,12 @@
     pad.value = ""; save(); updateCount(); detectedEl.textContent = ""; pad.focus();
   });
 
-  // Spacebar toggles recording when the notepad isn't focused.
+  // Spacebar toggles recording — but only when no form control is focused, so it
+  // doesn't fight the record/toggle buttons' own activation or type into the notepad.
+  const FORM_TAGS = ["TEXTAREA", "BUTTON", "SELECT", "INPUT"];
   document.addEventListener("keydown", (e) => {
-    if (e.code === "Space" && document.activeElement !== pad && modelReady) {
+    const tag = (document.activeElement && document.activeElement.tagName) || "";
+    if (e.code === "Space" && !FORM_TAGS.includes(tag) && modelReady) {
       e.preventDefault();
       recording ? stopRecording() : startRecording();
     }
