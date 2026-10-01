@@ -385,6 +385,7 @@
   // notes state
   let notes = [];          // summaries: {id, title, created_at, updated_at, renamed}
   let activeId = null;
+  let renamingId = null;   // set while a rename input is open in the list
   let dirty = false, saveTimer = null;
 
   // ---- restore persisted prefs ----
@@ -456,6 +457,8 @@
 
   // ---- notes: list rendering ----
   function renderList() {
+    // A rebuild would destroy the open rename input; the rename's commit re-renders.
+    if (renamingId) return;
     noteListEl.textContent = "";
     if (notes.length === 0) {
       const empty = document.createElement("div");
@@ -576,6 +579,7 @@
     const input = document.createElement("input");
     input.className = "rename-input";
     input.value = summary.title;
+    renamingId = summary.id;
     titleEl.replaceWith(input);
     input.focus();
     input.select();
@@ -588,11 +592,17 @@
         if (title && title !== summary.title) {
           try {
             const updated = await api("PUT", `/api/notes/${summary.id}`, { title });
-            summary.title = updated.title;
-            summary.renamed = updated.renamed;
+            // An autosave may have swapped in a fresh summary object meanwhile.
+            const current = notes.find((n) => n.id === summary.id);
+            if (current) {
+              current.title = updated.title;
+              current.renamed = updated.renamed;
+              current.updated_at = updated.updated_at;
+            }
           } catch { showBanner("<strong>Couldn’t rename that note.</strong>"); }
         }
       }
+      renamingId = null;
       renderList();
     };
     input.addEventListener("keydown", (e) => {
