@@ -51,8 +51,8 @@ app = FastAPI(title="Voice Notepad", lifespan=lifespan)
 
 @app.get("/")
 async def index() -> FileResponse:
-    """Serve the single-file UI."""
-    return FileResponse(STATIC_DIR / "index.html")
+    """Serve the single-file UI. No-cache so a rebuilt UI always loads fresh."""
+    return FileResponse(STATIC_DIR / "index.html", headers={"Cache-Control": "no-cache"})
 
 
 @app.get("/api/health")
