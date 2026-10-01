@@ -45,4 +45,4 @@ def fake_transcriber(monkeypatch: pytest.MonkeyPatch) -> FakeTranscriber:
 @pytest.fixture
 def client() -> TestClient:
     # Constructed without a `with` block so the lifespan model-load never fires in tests.
-    return TestClient(main.app)
+    return TestClient(main.app, base_url="http://127.0.0.1")

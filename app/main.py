@@ -11,6 +11,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from fastapi import FastAPI, Form, HTTPException, Response, UploadFile
+from fastapi.middleware.trustedhost import TrustedHostMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
@@ -47,6 +48,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Voice Notepad", lifespan=lifespan)
+# Reject foreign Host headers so a DNS-rebinding page can't read notes via 127.0.0.1.
+app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost"])
 
 
 @app.get("/")

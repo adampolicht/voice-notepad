@@ -19,7 +19,7 @@ def store(tmp_path, monkeypatch) -> NotesStore:
 
 @pytest.fixture
 def notes_client(store) -> TestClient:
-    return TestClient(main.app)
+    return TestClient(main.app, base_url="http://127.0.0.1")
 
 
 # ---- store unit tests ----
