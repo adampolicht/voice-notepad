@@ -16,6 +16,7 @@ class FakeTranscriber:
         self.model_name = "fake"
         self.device = "cpu"
         self._ready = ready
+        self.load_error: str | None = None
         self.last_call: tuple[str, str] | None = None
 
     @property

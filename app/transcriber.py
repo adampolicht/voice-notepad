@@ -42,12 +42,17 @@ class Transcriber:
         self.device = _resolve_device(device)
         self.compute_type = _resolve_compute_type(compute_type, self.device)
         self._model: WhisperModel | None = None
+        self.load_error: str | None = None
 
     def load(self) -> None:
-        """Load the model into memory (downloads on first run). Call once at startup."""
-        self._model = WhisperModel(
-            self.model_name, device=self.device, compute_type=self.compute_type
-        )
+        """Load the model into memory (downloads on first run). Records any failure."""
+        try:
+            self._model = WhisperModel(
+                self.model_name, device=self.device, compute_type=self.compute_type
+            )
+        except Exception as exc:
+            self.load_error = f"{type(exc).__name__}: {exc}"
+            raise
 
     @property
     def ready(self) -> bool:

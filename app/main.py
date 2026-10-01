@@ -32,7 +32,7 @@ notes = NotesStore(settings.notes_dir)
 
 
 def _load_model() -> None:
-    """Load the model, logging any failure so /api/health doesn't just hang on 'loading'."""
+    """Load the model; a failure is logged and surfaced by /api/health as status 'error'."""
     try:
         transcriber.load()
         logger.info("Model loaded: %s on %s", transcriber.model_name, transcriber.device)
@@ -60,14 +60,13 @@ async def index() -> FileResponse:
 
 @app.get("/api/health")
 async def health() -> JSONResponse:
-    """Report whether the model is loaded yet, plus the active model and device."""
-    return JSONResponse(
-        {
-            "status": "ok" if transcriber.ready else "loading",
-            "model": transcriber.model_name,
-            "device": transcriber.device,
-        }
-    )
+    """Report model state ('ok' / 'loading' / 'error'), plus the active model and device."""
+    body = {"model": transcriber.model_name, "device": transcriber.device}
+    if transcriber.ready:
+        return JSONResponse({"status": "ok", **body})
+    if transcriber.load_error:
+        return JSONResponse({"status": "error", "error": transcriber.load_error, **body})
+    return JSONResponse({"status": "loading", **body})
 
 
 @app.post("/api/transcribe")

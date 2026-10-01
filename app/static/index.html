@@ -639,6 +639,11 @@
         modelReady = true;
         recordBtn.disabled = false;
         setStatus("Ready", "");
+      } else if (h.status === "error") {
+        // Loading won't recover on its own: stop polling and say why.
+        setStatus("Model error", "");
+        showBanner("<strong>Model failed to load.</strong> Check <code>WHISPER_MODEL</code> in <code>.env</code>, then restart. ");
+        banner.append(h.error || "");
       } else {
         setStatus("Loading model…", "transcribing");
         setTimeout(checkHealth, 1200);
