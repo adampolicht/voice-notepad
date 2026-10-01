@@ -18,6 +18,7 @@ class Settings(BaseSettings):
     host: str = "127.0.0.1"
     port: int = 8000
     default_language: Language = "auto"
+    notes_dir: str = "~/.voice-notepad/notes"
 
 
 settings = Settings()

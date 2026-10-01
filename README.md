@@ -19,6 +19,13 @@ uv run uvicorn app.main:app  # http://127.0.0.1:8000
 
 Open the page, allow the mic, press record (or the spacebar), speak, press again to stop.
 
+## Notes
+
+Transcriptions land in a saved notes library — the list on the right works like chats in Claude/ChatGPT.
+Notes save automatically as you type or dictate; **+ New** starts a fresh one, and hovering a note in the
+list reveals **rename** (✎) and **delete** (✕). Each note is a plain JSON file on disk (default
+`~/.voice-notepad/notes`, set via `NOTES_DIR`), so they survive browser changes and are easy to back up.
+
 **One-click launch (macOS):** after the first `uv sync`, just double-click `run.command`. It starts the
 server (if it isn't already running) and opens the app in your browser. Keep that Terminal window open
 while you use it; close it or press Ctrl+C to stop.
@@ -57,12 +64,13 @@ download it on that machine once.
 | `WHISPER_COMPUTE_TYPE` | `auto` | `int8` on CPU, `float16` on GPU |
 | `HOST` / `PORT` | `127.0.0.1` / `8000` | Local only |
 | `DEFAULT_LANGUAGE` | `auto` | `auto` `pl` `en` |
+| `NOTES_DIR` | `~/.voice-notepad/notes` | Where saved notes are stored (one JSON file each) |
 
 ## Privacy
 
 Everything runs on your machine. The server binds `127.0.0.1` only (not reachable from other devices),
-and the one-time model download above is the sole outbound request. Notepad text is cached in the
-browser's `localStorage`; use **Clear** to wipe it.
+and the one-time model download above is the sole outbound request. Notes are stored as local files under
+`NOTES_DIR`; delete one from the list to remove its file, or use **Clear** to empty the current note's text.
 
 ## Troubleshooting
 

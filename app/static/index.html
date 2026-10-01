@@ -44,7 +44,7 @@
   }
   .shell {
     width: 100%;
-    max-width: 720px;
+    max-width: 960px;
     border: 1.5px solid var(--ink);
     background: var(--paper);
   }
@@ -78,7 +78,12 @@
     color: var(--paper); opacity: .72; text-align: right;
   }
 
-  .body { padding: clamp(16px, 3.5vw, 26px); display: flex; flex-direction: column; gap: 20px; }
+  /* Two-column workspace: editor on the left, note library on the right */
+  .workspace { display: flex; align-items: stretch; }
+  .body {
+    flex: 1 1 auto; min-width: 0;
+    padding: clamp(16px, 3.5vw, 26px); display: flex; flex-direction: column; gap: 20px;
+  }
 
   /* Control row */
   .controls { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
@@ -186,6 +191,9 @@
   }
   .count { font-variant-numeric: tabular-nums; }
   .detected { color: var(--ink-faint); }
+  .savestate { color: var(--ink-faint); }
+  .savestate.is-saving { color: var(--ink-soft); }
+  .savestate.is-error { color: var(--accent); }
   footer .grow { margin-left: auto; display: flex; gap: 0; border: 1.5px solid var(--ink); }
   .ghost {
     font-family: var(--mono);
@@ -197,6 +205,66 @@
   .ghost + .ghost { border-left: 1.5px solid var(--ink); }
   .ghost:hover { background: var(--ink); color: var(--paper); }
   .ghost.copied { background: var(--accent); color: var(--accent-ink); }
+
+  /* Notes sidebar */
+  .sidebar {
+    flex: 0 0 248px;
+    border-left: 1.5px solid var(--ink);
+    display: flex; flex-direction: column;
+    background: var(--paper);
+  }
+  .sidebar-head {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 12px 14px;
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .new-note {
+    font-family: var(--mono);
+    font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700;
+    display: inline-flex; align-items: center; gap: 7px;
+    border: 1.5px solid var(--ink); background: var(--paper); color: var(--ink);
+    padding: 6px 11px; cursor: pointer;
+    transition: background .12s ease, color .12s ease;
+  }
+  .new-note:hover { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .new-note .plus { font-size: 14px; line-height: 1; }
+
+  .note-list { flex: 1 1 auto; overflow-y: auto; max-height: 62vh; }
+  .note-empty { padding: 20px 14px; color: var(--ink-faint); font-size: 11px; line-height: 1.6; letter-spacing: 0.04em; }
+  .note-item {
+    position: relative;
+    padding: 11px 13px;
+    border-bottom: 1px solid var(--line);
+    cursor: pointer;
+    display: flex; flex-direction: column; gap: 4px;
+    transition: background .1s ease;
+  }
+  .note-item:hover { background: var(--screen); }
+  .note-item.active { background: var(--screen); box-shadow: inset 3px 0 0 var(--accent); }
+  .note-title {
+    font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    padding-right: 42px;
+  }
+  .note-time { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-faint); }
+  .note-actions {
+    position: absolute; top: 9px; right: 10px;
+    display: none; gap: 4px;
+  }
+  .note-item:hover .note-actions, .note-item.active .note-actions { display: flex; }
+  .icon-btn {
+    font-family: var(--mono); font-size: 11px; line-height: 1;
+    width: 22px; height: 22px; display: grid; place-items: center;
+    border: 1.5px solid var(--ink); background: var(--paper); color: var(--ink);
+    cursor: pointer; padding: 0;
+  }
+  .icon-btn:hover { background: var(--ink); color: var(--paper); }
+  .icon-btn.danger:hover { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .rename-input {
+    font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 0.02em;
+    width: 100%; border: 1.5px solid var(--accent); background: var(--paper); color: var(--ink);
+    padding: 3px 5px; border-radius: 0;
+  }
 
   /* Error / info banner */
   .banner {
@@ -214,6 +282,11 @@
   .banner code { font-family: var(--mono); background: var(--screen); padding: 1px 4px; }
 
   @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
+  @media (max-width: 760px) {
+    .workspace { flex-direction: column; }
+    .sidebar { flex: 0 0 auto; border-left: none; border-top: 1.5px solid var(--ink); }
+    .note-list { max-height: 34vh; }
+  }
   @media (max-width: 540px) {
     .controls { gap: 14px; }
     .opts { margin-left: 0; width: 100%; }
@@ -230,56 +303,67 @@
       <div class="sys" id="meta">local · private</div>
     </div>
 
-    <div class="body">
-      <div class="banner" id="banner" role="alert"></div>
+    <div class="workspace">
+      <div class="body">
+        <div class="banner" id="banner" role="alert"></div>
 
-      <div class="controls">
-        <div class="rec-wrap">
-          <button class="record" id="record" aria-label="Start recording" disabled>
-            <span class="glyph"></span>
-          </button>
-          <span class="rec-label">Push / Space</span>
-        </div>
-
-        <div class="screen">
-          <div class="status-line" id="statusLine">
-            <span class="pip"></span>
-            <span id="statusText">Loading model…</span>
-            <span class="spinner"></span>
+        <div class="controls">
+          <div class="rec-wrap">
+            <button class="record" id="record" aria-label="Start recording" disabled>
+              <span class="glyph"></span>
+            </button>
+            <span class="rec-label">Push / Space</span>
           </div>
-          <div class="timer" id="timer" hidden>00:00</div>
-        </div>
 
-        <div class="opts">
-          <div class="field">
-            <span class="label">Mode</span>
-            <div class="seg" role="group" aria-label="Insert mode">
-              <button id="modeAppend" aria-pressed="true">Append</button>
-              <button id="modeReplace" aria-pressed="false">Replace</button>
+          <div class="screen">
+            <div class="status-line" id="statusLine">
+              <span class="pip"></span>
+              <span id="statusText">Loading model…</span>
+              <span class="spinner"></span>
+            </div>
+            <div class="timer" id="timer" hidden>00:00</div>
+          </div>
+
+          <div class="opts">
+            <div class="field">
+              <span class="label">Mode</span>
+              <div class="seg" role="group" aria-label="Insert mode">
+                <button id="modeAppend" aria-pressed="true">Append</button>
+                <button id="modeReplace" aria-pressed="false">Replace</button>
+              </div>
+            </div>
+            <div class="field">
+              <label class="label" for="lang">Lang</label>
+              <select id="lang" aria-label="Language">
+                <option value="auto">Auto</option>
+                <option value="pl">Polski</option>
+                <option value="en">English</option>
+              </select>
             </div>
           </div>
-          <div class="field">
-            <label class="label" for="lang">Lang</label>
-            <select id="lang" aria-label="Language">
-              <option value="auto">Auto</option>
-              <option value="pl">Polski</option>
-              <option value="en">English</option>
-            </select>
-          </div>
         </div>
+
+        <section class="pad">
+          <textarea class="txt" id="pad" placeholder="Press record and start speaking. Your words land here. Edit freely — notes save automatically."></textarea>
+          <footer>
+            <span class="count" id="count">Chars 0000</span>
+            <span class="detected" id="detected"></span>
+            <span class="savestate" id="saveState"></span>
+            <span class="grow">
+              <button class="ghost" id="copy">Copy all</button>
+              <button class="ghost" id="clear">Clear</button>
+            </span>
+          </footer>
+        </section>
       </div>
 
-      <section class="pad">
-        <textarea class="txt" id="pad" placeholder="Press record and start speaking. Your words land here. Edit freely, then copy them anywhere."></textarea>
-        <footer>
-          <span class="count" id="count">Chars 0000</span>
-          <span class="detected" id="detected"></span>
-          <span class="grow">
-            <button class="ghost" id="copy">Copy all</button>
-            <button class="ghost" id="clear">Clear</button>
-          </span>
-        </footer>
-      </section>
+      <aside class="sidebar" aria-label="Saved notes">
+        <div class="sidebar-head">
+          <span class="label">Notes</span>
+          <button class="new-note" id="newNote"><span class="plus">+</span>New</button>
+        </div>
+        <div class="note-list" id="noteList"></div>
+      </aside>
     </div>
   </main>
 
@@ -290,28 +374,35 @@
   const pad = $("pad"), recordBtn = $("record"), statusLine = $("statusLine"),
         statusText = $("statusText"), timerEl = $("timer"), banner = $("banner"),
         langSel = $("lang"), countEl = $("count"), detectedEl = $("detected"),
-        meta = $("meta"), modeAppend = $("modeAppend"), modeReplace = $("modeReplace");
+        meta = $("meta"), modeAppend = $("modeAppend"), modeReplace = $("modeReplace"),
+        saveStateEl = $("saveState"), noteListEl = $("noteList"), newNoteBtn = $("newNote");
 
-  const LS = { text: "vn.text", lang: "vn.lang", mode: "vn.mode" };
+  const LS = { lang: "vn.lang", mode: "vn.mode", active: "vn.active" };
   let mode = localStorage.getItem(LS.mode) || "append";
   let modelReady = false, recording = false, stream = null, recorder = null,
       chunks = [], tick = null, startedAt = 0;
 
-  // ---- restore persisted state ----
-  pad.value = localStorage.getItem(LS.text) || "";
+  // notes state
+  let notes = [];          // summaries: {id, title, created_at, updated_at, renamed}
+  let activeId = null;
+  let dirty = false, saveTimer = null;
+
+  // ---- restore persisted prefs ----
   langSel.value = localStorage.getItem(LS.lang) || "auto";
-  updateCount();
   setMode(mode);
+  updateCount();
 
   // ---- helpers ----
   function updateCount() {
-    const n = pad.value.length;
-    countEl.textContent = `Chars ${String(n).padStart(4, "0")}`;
+    countEl.textContent = `Chars ${String(pad.value.length).padStart(4, "0")}`;
   }
-  function save() { localStorage.setItem(LS.text, pad.value); }
   function setStatus(text, state) {
     statusText.textContent = text;
     statusLine.className = "status-line" + (state ? " is-" + state : "");
+  }
+  function setSave(text, kind) {
+    saveStateEl.textContent = text;
+    saveStateEl.className = "savestate" + (kind ? " is-" + kind : "");
   }
   function showBanner(html, kind = "error") {
     banner.className = "banner show" + (kind === "info" ? " info" : "");
@@ -322,12 +413,31 @@
     const m = Math.floor(s / 60), sec = s % 60;
     return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
   }
+  function relTime(epochS) {
+    const diff = Date.now() / 1000 - epochS;
+    if (diff < 60) return "just now";
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    const d = new Date(epochS * 1000);
+    return d.toLocaleDateString(undefined, { month: "short", day: "numeric" });
+  }
   function setMode(m) {
     mode = m;
     const app = m === "append";
     modeAppend.setAttribute("aria-pressed", String(app));
     modeReplace.setAttribute("aria-pressed", String(!app));
     localStorage.setItem(LS.mode, m);
+  }
+
+  async function api(method, url, body) {
+    const opt = { method, headers: {} };
+    if (body !== undefined) {
+      opt.headers["Content-Type"] = "application/json";
+      opt.body = JSON.stringify(body);
+    }
+    const r = await fetch(url, opt);
+    if (!r.ok) throw new Error(`${method} ${url} → ${r.status}`);
+    return r.status === 204 ? null : r.json();
   }
 
   function insertText(text) {
@@ -338,10 +448,185 @@
     } else {
       pad.value = pad.value.replace(/\s+$/, "") + "\n\n" + text;
     }
-    save();
     updateCount();
     pad.scrollTop = pad.scrollHeight;
     pad.classList.remove("flash"); void pad.offsetWidth; pad.classList.add("flash");
+    scheduleSave();
+  }
+
+  // ---- notes: list rendering ----
+  function renderList() {
+    noteListEl.textContent = "";
+    if (notes.length === 0) {
+      const empty = document.createElement("div");
+      empty.className = "note-empty";
+      empty.textContent = "No notes yet. Record something or start typing.";
+      noteListEl.appendChild(empty);
+      return;
+    }
+    for (const n of notes) {
+      const item = document.createElement("div");
+      item.className = "note-item" + (n.id === activeId ? " active" : "");
+      item.dataset.id = n.id;
+
+      const title = document.createElement("div");
+      title.className = "note-title";
+      title.textContent = n.title;
+
+      const time = document.createElement("div");
+      time.className = "note-time";
+      time.textContent = relTime(n.updated_at);
+
+      const actions = document.createElement("div");
+      actions.className = "note-actions";
+      const renameBtn = document.createElement("button");
+      renameBtn.className = "icon-btn"; renameBtn.title = "Rename"; renameBtn.textContent = "✎";
+      renameBtn.addEventListener("click", (e) => { e.stopPropagation(); startRename(item, n); });
+      const delBtn = document.createElement("button");
+      delBtn.className = "icon-btn danger"; delBtn.title = "Delete"; delBtn.textContent = "✕";
+      delBtn.addEventListener("click", (e) => { e.stopPropagation(); deleteNote(n); });
+      actions.append(renameBtn, delBtn);
+
+      item.append(title, time, actions);
+      item.addEventListener("click", () => { if (n.id !== activeId) openNote(n.id); });
+      noteListEl.appendChild(item);
+    }
+  }
+
+  function reorderActiveToTop(summary) {
+    notes = notes.filter((n) => n.id !== summary.id);
+    notes.unshift(summary);
+  }
+
+  // ---- notes: CRUD ----
+  async function loadNotes() {
+    try {
+      notes = await api("GET", "/api/notes");
+    } catch {
+      notes = [];
+    }
+    renderList();
+    const prefer = localStorage.getItem(LS.active);
+    if (notes.length === 0) {
+      await newNote();
+    } else {
+      const target = notes.find((n) => n.id === prefer) ? prefer : notes[0].id;
+      await openNote(target);
+    }
+  }
+
+  async function openNote(id) {
+    await flushSave();
+    try {
+      const note = await api("GET", `/api/notes/${id}`);
+      activeId = note.id;
+      localStorage.setItem(LS.active, note.id);
+      pad.value = note.content;
+      dirty = false;
+      updateCount();
+      detectedEl.textContent = "";
+      setSave("");
+      renderList();
+    } catch {
+      showBanner("<strong>Couldn’t open that note.</strong> It may have been removed.");
+      await loadNotes();
+    }
+  }
+
+  async function newNote() {
+    await flushSave();
+    try {
+      const note = await api("POST", "/api/notes", { content: "" });
+      notes.unshift({ id: note.id, title: note.title, created_at: note.created_at,
+                      updated_at: note.updated_at, renamed: note.renamed });
+      activeId = note.id;
+      localStorage.setItem(LS.active, note.id);
+      pad.value = "";
+      dirty = false;
+      updateCount();
+      detectedEl.textContent = "";
+      setSave("");
+      renderList();
+      pad.focus();
+    } catch {
+      showBanner("<strong>Couldn’t create a note.</strong> Is the server still running?");
+    }
+  }
+
+  async function deleteNote(summary) {
+    if (!confirm(`Delete “${summary.title}”? This removes the file from disk.`)) return;
+    try {
+      await api("DELETE", `/api/notes/${summary.id}`);
+    } catch {
+      showBanner("<strong>Couldn’t delete that note.</strong>");
+      return;
+    }
+    notes = notes.filter((n) => n.id !== summary.id);
+    if (activeId === summary.id) {
+      activeId = null;
+      if (notes.length) await openNote(notes[0].id);
+      else await newNote();
+    } else {
+      renderList();
+    }
+  }
+
+  function startRename(item, summary) {
+    const titleEl = item.querySelector(".note-title");
+    const input = document.createElement("input");
+    input.className = "rename-input";
+    input.value = summary.title;
+    titleEl.replaceWith(input);
+    input.focus();
+    input.select();
+
+    let done = false;
+    const commit = async (save) => {
+      if (done) return; done = true;
+      if (save) {
+        const title = input.value.trim();
+        if (title && title !== summary.title) {
+          try {
+            const updated = await api("PUT", `/api/notes/${summary.id}`, { title });
+            summary.title = updated.title;
+            summary.renamed = updated.renamed;
+          } catch { showBanner("<strong>Couldn’t rename that note.</strong>"); }
+        }
+      }
+      renderList();
+    };
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") { e.preventDefault(); commit(true); }
+      else if (e.key === "Escape") { e.preventDefault(); commit(false); }
+    });
+    input.addEventListener("blur", () => commit(true));
+    input.addEventListener("click", (e) => e.stopPropagation());
+  }
+
+  // ---- notes: autosave ----
+  function scheduleSave() {
+    dirty = true;
+    setSave("Saving…", "saving");
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushSave, 600);
+  }
+
+  async function flushSave() {
+    clearTimeout(saveTimer);
+    if (!dirty || !activeId) return;
+    dirty = false;
+    const id = activeId;
+    try {
+      const updated = await api("PUT", `/api/notes/${id}`, { content: pad.value });
+      const summary = { id: updated.id, title: updated.title, created_at: updated.created_at,
+                        updated_at: updated.updated_at, renamed: updated.renamed };
+      reorderActiveToTop(summary);
+      renderList();
+      setSave("Saved", "");
+    } catch {
+      dirty = true;
+      setSave("Save failed", "error");
+    }
   }
 
   // ---- health ----
@@ -455,7 +740,9 @@
   langSel.addEventListener("change", () => localStorage.setItem(LS.lang, langSel.value));
   modeAppend.addEventListener("click", () => setMode("append"));
   modeReplace.addEventListener("click", () => setMode("replace"));
-  pad.addEventListener("input", () => { save(); updateCount(); });
+  pad.addEventListener("input", () => { updateCount(); scheduleSave(); });
+  pad.addEventListener("blur", flushSave);
+  newNoteBtn.addEventListener("click", newNote);
 
   $("copy").addEventListener("click", async (e) => {
     if (!pad.value) return;
@@ -468,8 +755,20 @@
     }
   });
   $("clear").addEventListener("click", () => {
-    if (pad.value && !confirm("Clear the whole notepad?")) return;
-    pad.value = ""; save(); updateCount(); detectedEl.textContent = ""; pad.focus();
+    if (pad.value && !confirm("Clear the text of this note?")) return;
+    pad.value = ""; updateCount(); detectedEl.textContent = ""; scheduleSave(); pad.focus();
+  });
+
+  // Flush the pending save if the page is closing mid-edit (keepalive survives unload).
+  window.addEventListener("beforeunload", () => {
+    if (dirty && activeId) {
+      clearTimeout(saveTimer);
+      fetch(`/api/notes/${activeId}`, {
+        method: "PUT", keepalive: true,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: pad.value }),
+      });
+    }
   });
 
   // Spacebar toggles recording — but only when no form control is focused, so it
@@ -484,6 +783,7 @@
   });
 
   checkHealth();
+  loadNotes();
 })();
 </script>
 </body>

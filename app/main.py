@@ -7,13 +7,16 @@ import logging
 import os
 import tempfile
 from contextlib import asynccontextmanager
+from dataclasses import asdict
 from pathlib import Path
 
-from fastapi import FastAPI, Form, HTTPException, UploadFile
+from fastapi import FastAPI, Form, HTTPException, Response, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
+from pydantic import BaseModel
 from starlette.concurrency import run_in_threadpool
 
 from app.config import settings
+from app.notes import ID_RE, NotesStore
 from app.transcriber import Transcriber
 
 STATIC_DIR = Path(__file__).parent / "static"
@@ -24,6 +27,7 @@ logger = logging.getLogger("voice_notepad")
 transcriber = Transcriber(
     settings.whisper_model, settings.whisper_device, settings.whisper_compute_type
 )
+notes = NotesStore(settings.notes_dir)
 
 
 def _load_model() -> None:
@@ -103,3 +107,66 @@ async def transcribe(
             "processing_s": result.processing_s,
         }
     )
+
+
+class NoteCreate(BaseModel):
+    title: str = ""
+    content: str = ""
+
+
+class NoteUpdate(BaseModel):
+    title: str | None = None
+    content: str | None = None
+
+
+def _summary(note) -> dict:
+    """List payload: everything but the body, so the sidebar stays light."""
+    return {k: v for k, v in asdict(note).items() if k != "content"}
+
+
+def _require_id(note_id: str) -> None:
+    """Reject ids that aren't our 32-char hex, before they reach the filesystem."""
+    if not ID_RE.match(note_id):
+        raise HTTPException(status_code=400, detail="Invalid note id.")
+
+
+@app.get("/api/notes")
+async def list_notes() -> JSONResponse:
+    """List all saved notes, newest first (summaries without body text)."""
+    return JSONResponse([_summary(n) for n in notes.list()])
+
+
+@app.post("/api/notes")
+async def create_note(payload: NoteCreate) -> JSONResponse:
+    """Create a new note and return it in full."""
+    note = notes.create(title=payload.title, content=payload.content)
+    return JSONResponse(asdict(note), status_code=201)
+
+
+@app.get("/api/notes/{note_id}")
+async def get_note(note_id: str) -> JSONResponse:
+    """Return one note in full, including its body."""
+    _require_id(note_id)
+    note = notes.get(note_id)
+    if note is None:
+        raise HTTPException(status_code=404, detail="Note not found.")
+    return JSONResponse(asdict(note))
+
+
+@app.put("/api/notes/{note_id}")
+async def update_note(note_id: str, payload: NoteUpdate) -> JSONResponse:
+    """Update a note's content and/or title."""
+    _require_id(note_id)
+    note = notes.update(note_id, content=payload.content, title=payload.title)
+    if note is None:
+        raise HTTPException(status_code=404, detail="Note not found.")
+    return JSONResponse(asdict(note))
+
+
+@app.delete("/api/notes/{note_id}", status_code=204)
+async def delete_note(note_id: str) -> Response:
+    """Delete a note's file from disk."""
+    _require_id(note_id)
+    if not notes.delete(note_id):
+        raise HTTPException(status_code=404, detail="Note not found.")
+    return Response(status_code=204)
