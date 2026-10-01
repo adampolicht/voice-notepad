@@ -387,6 +387,7 @@
   let activeId = null;
   let renamingId = null;   // set while a rename input is open in the list
   let dirty = false, saveTimer = null;
+  let inFlight = null;     // the PUT currently on the wire, if any
 
   // ---- restore persisted prefs ----
   // An explicit pick wins; otherwise checkHealth applies the server's DEFAULT_LANGUAGE.
@@ -624,19 +625,26 @@
 
   async function flushSave() {
     clearTimeout(saveTimer);
+    // One PUT at a time: overlapping requests can land out of order and let older
+    // text overwrite newer. Edits made meanwhile stay `dirty` and go out next.
+    while (inFlight) await inFlight.catch(() => {});  // its own caller handles failure
     if (!dirty || !activeId) return;
     dirty = false;
     const id = activeId;
+    inFlight = api("PUT", `/api/notes/${id}`, { content: pad.value });
     try {
-      const updated = await api("PUT", `/api/notes/${id}`, { content: pad.value });
+      const updated = await inFlight;
       const summary = { id: updated.id, title: updated.title, created_at: updated.created_at,
                         updated_at: updated.updated_at, renamed: updated.renamed };
       reorderActiveToTop(summary);
       renderList();
-      setSave("Saved", "");
+      // Typing during the request leaves a save pending; don't claim "Saved" yet.
+      if (dirty) setSave("Saving…", "saving"); else setSave("Saved", "");
     } catch {
       dirty = true;
       setSave("Save failed", "error");
+    } finally {
+      inFlight = null;
     }
   }
 
