@@ -93,11 +93,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func openBrowser() {
         let p = Process()
         p.launchPath = "/usr/bin/open"
-        p.arguments = ["-a", "Opera GX", urlString]
-        try? p.run(); p.waitUntilExit()
-        if p.terminationStatus != 0 {
-            let q = Process(); q.launchPath = "/usr/bin/open"; q.arguments = [urlString]; try? q.run()
-        }
+        p.arguments = [urlString]  // the user's default browser
+        try? p.run()
     }
 
     // Clicking the Dock icon while running re-opens the tab.

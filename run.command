@@ -17,7 +17,7 @@ fi
 PORT="$(.venv/bin/python -m app --print-port 2>/dev/null || echo 8000)"
 URL="http://127.0.0.1:$PORT"
 
-open_browser() { open -a "Opera GX" "$URL" 2>/dev/null || open "$URL"; }
+open_browser() { open "$URL"; }
 
 # Already running? Just open it.
 if curl -s -m 2 "$URL/api/health" >/dev/null 2>&1; then
