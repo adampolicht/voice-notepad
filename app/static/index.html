@@ -379,7 +379,7 @@
 
   const LS = { lang: "vn.lang", mode: "vn.mode", active: "vn.active" };
   let mode = localStorage.getItem(LS.mode) || "append";
-  let modelReady = false, recording = false, stream = null, recorder = null,
+  let modelReady = false, recording = false, starting = false, stream = null, recorder = null,
       chunks = [], tick = null, startedAt = 0;
 
   // notes state
@@ -657,6 +657,10 @@
 
   // ---- recording ----
   async function startRecording() {
+    // getUserMedia is async (and may wait on a permission prompt): a second start in
+    // that window would open another stream and leak the first, leaving the mic on.
+    if (recording || starting) return;
+    starting = true;
     clearBanner();
     detectedEl.textContent = "";
     try {
@@ -667,6 +671,8 @@
         ? "<strong>Microphone blocked.</strong> Allow mic access for this site in your browser, then try again."
         : "<strong>No microphone found.</strong> Check that a mic is connected and available.");
       return;
+    } finally {
+      starting = false;
     }
     chunks = [];
     const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus"
@@ -783,6 +789,7 @@
     const tag = (document.activeElement && document.activeElement.tagName) || "";
     if (e.code === "Space" && !FORM_TAGS.includes(tag) && modelReady) {
       e.preventDefault();
+      if (e.repeat) return;  // holding Space must not toggle on every auto-repeat
       recording ? stopRecording() : startRecording();
     }
   });
