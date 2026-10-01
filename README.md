@@ -1,9 +1,9 @@
 # Voice Notepad
 
-**Private dictation that never leaves your computer.** Press record, speak Polish or English, and your
-words appear in an editable notepad. Speech recognition runs locally with
-[faster-whisper](https://github.com/SYSTRAN/faster-whisper) (OpenAI's Whisper model, optimized): no cloud,
-no account, no subscription, no telemetry.
+**Offline speech-to-text notepad: private dictation that never leaves your computer.** Press record,
+speak Polish or English, and your words appear as editable text. Transcription runs locally with
+[faster-whisper](https://github.com/SYSTRAN/faster-whisper), an optimized build of OpenAI's Whisper speech
+recognition model: no cloud, no account, no subscription, no telemetry.
 
 ![Voice Notepad: record button, notepad editor and a list of saved notes](docs/screenshot.png)
 
