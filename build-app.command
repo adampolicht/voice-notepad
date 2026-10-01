@@ -25,7 +25,23 @@ import Cocoa
 let repoPath = "$REPO"
 EOF
 cat >> "$TMP/main.swift" <<'SWIFT'
-let urlString = "http://127.0.0.1:8000"
+
+// Port comes from .env (PORT) via `python -m app --print-port`; 8000 if that fails.
+let urlString: String = {
+    let p = Process()
+    p.launchPath = "\(repoPath)/.venv/bin/python"
+    p.arguments = ["-m", "app", "--print-port"]
+    p.currentDirectoryPath = repoPath
+    let out = Pipe(); p.standardOutput = out; p.standardError = Pipe()
+    var port = "8000"
+    if (try? p.run()) != nil {
+        p.waitUntilExit()
+        let s = String(decoding: out.fileHandleForReading.readDataToEndOfFile(), as: UTF8.self)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        if p.terminationStatus == 0, Int(s) != nil { port = s }
+    }
+    return "http://127.0.0.1:\(port)"
+}()
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
 
@@ -50,8 +66,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     // Launch the server via the watchdog, passing our own PID so it stops when we quit.
     func startServer() -> Bool {
-        let uvicorn = "\(repoPath)/.venv/bin/uvicorn"
-        if !FileManager.default.isExecutableFile(atPath: uvicorn) {
+        let python = "\(repoPath)/.venv/bin/python"
+        if !FileManager.default.isExecutableFile(atPath: python) {
             alert("Dependencies are not installed yet.\nOpen the project folder and run:  uv sync")
             NSApp.terminate(nil); return false
         }

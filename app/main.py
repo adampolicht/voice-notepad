@@ -60,8 +60,12 @@ async def index() -> FileResponse:
 
 @app.get("/api/health")
 async def health() -> JSONResponse:
-    """Report model state ('ok' / 'loading' / 'error'), plus the active model and device."""
-    body = {"model": transcriber.model_name, "device": transcriber.device}
+    """Report model state ('ok' / 'loading' / 'error'), plus model, device and UI defaults."""
+    body = {
+        "model": transcriber.model_name,
+        "device": transcriber.device,
+        "default_language": settings.default_language,
+    }
     if transcriber.ready:
         return JSONResponse({"status": "ok", **body})
     if transcriber.load_error:

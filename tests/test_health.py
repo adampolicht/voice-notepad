@@ -9,7 +9,7 @@ def test_health_ok_when_ready(client, fake_transcriber) -> None:
     resp = client.get("/api/health")
     assert resp.status_code == 200
     body = resp.json()
-    assert body == {"status": "ok", "model": "fake", "device": "cpu"}
+    assert body == {"status": "ok", "model": "fake", "device": "cpu", "default_language": "auto"}
 
 
 def test_health_loading_when_not_ready(client, monkeypatch) -> None:

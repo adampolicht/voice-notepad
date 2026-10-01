@@ -389,7 +389,8 @@
   let dirty = false, saveTimer = null;
 
   // ---- restore persisted prefs ----
-  langSel.value = localStorage.getItem(LS.lang) || "auto";
+  // An explicit pick wins; otherwise checkHealth applies the server's DEFAULT_LANGUAGE.
+  if (localStorage.getItem(LS.lang)) langSel.value = localStorage.getItem(LS.lang);
   setMode(mode);
   updateCount();
 
@@ -645,6 +646,7 @@
       const r = await fetch("/api/health");
       const h = await r.json();
       meta.textContent = `${h.model} · ${h.device} · local`;
+      if (!localStorage.getItem(LS.lang) && h.default_language) langSel.value = h.default_language;
       if (h.status === "ok") {
         modelReady = true;
         recordBtn.disabled = false;

@@ -15,11 +15,12 @@ Personal, fully local voice-to-text notepad. See `SPEC.md` for full scope and ac
 - `app/main.py` — FastAPI app, routes, startup model load.
 - `app/transcriber.py` — faster-whisper wrapper.
 - `app/config.py` — env loading.
+- `app/__main__.py` — `python -m app` entry point used by the launchers (HOST/PORT from env).
 - `app/static/index.html` — single-file UI.
 - `tests/` — pytest (API tests mock the transcriber; no model download in CI).
 - `docs/DECISIONS.md` — decisions taken where the spec was ambiguous.
 
 ## Run
 - `uv sync --extra dev`
-- `uv run uvicorn app.main:app` → http://127.0.0.1:8000
+- `uv run python -m app` → http://127.0.0.1:8000 (HOST/PORT from `.env`)
 - `uv run pytest` / `uv run ruff check`

@@ -10,7 +10,8 @@ cd "$REPO" || exit 1
 
 # nohup on uvicorn itself so it survives even when the launching shell's process group
 # is torn down (e.g. AppleScript's `do shell script` returning).
-nohup "$REPO/.venv/bin/uvicorn" app.main:app --host 127.0.0.1 --port 8000 >/dev/null 2>&1 &
+# HOST/PORT come from .env via `python -m app`.
+nohup "$REPO/.venv/bin/python" -m app >/dev/null 2>&1 &
 SRV=$!
 
 if [ -n "$WATCH_PID" ]; then

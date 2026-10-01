@@ -14,7 +14,7 @@ powered by [faster-whisper](https://github.com/SYSTRAN/faster-whisper): no cloud
 ```bash
 uv sync --extra dev          # install deps
 cp .env.example .env         # optional: change model / language
-uv run uvicorn app.main:app  # http://127.0.0.1:8000
+uv run python -m app         # http://127.0.0.1:8000 (HOST/PORT from .env)
 ```
 
 Open the page, allow the mic, press record (or the spacebar), speak, press again to stop.
@@ -62,8 +62,8 @@ download it on that machine once.
 | `WHISPER_MODEL` | `small` | `tiny` `base` `small` `medium` `large-v3` `large-v3-turbo`. Polish needs `small`+ ; `tiny`/`base` are weak |
 | `WHISPER_DEVICE` | `auto` | `auto` picks CUDA if present, else CPU |
 | `WHISPER_COMPUTE_TYPE` | `auto` | `int8` on CPU, `float16` on GPU |
-| `HOST` / `PORT` | `127.0.0.1` / `8000` | Local only |
-| `DEFAULT_LANGUAGE` | `auto` | `auto` `pl` `en` |
+| `HOST` / `PORT` | `127.0.0.1` / `8000` | Local only. Used by `python -m app`, `run.command` and the Dock app (rebuild it after changing `PORT`) |
+| `DEFAULT_LANGUAGE` | `auto` | `auto` `pl` `en`. Preselected in the UI until you pick a language there |
 | `NOTES_DIR` | `~/.voice-notepad/notes` | Where saved notes are stored (one JSON file each) |
 
 ## Privacy
