@@ -209,6 +209,7 @@
   /* Notes sidebar */
   .sidebar {
     flex: 0 0 248px;
+    min-width: 0; /* else nowrap titles' min-content width overrides the 248px basis */
     border-left: 1.5px solid var(--ink);
     display: flex; flex-direction: column;
     background: var(--paper);
